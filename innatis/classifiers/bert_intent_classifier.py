@@ -22,6 +22,7 @@ from innatis.classifiers.bert.run_classifier import (
 )
 from innatis.classifiers.bert.tokenization import FullTokenizer
 from innatis.classifiers.bert.modeling import BertConfig
+from tensorflow.contrib.estimator import make_early_stopping_hook, stop_if_no_increase_hook
 import logging
 
 logger = logging.getLogger(__name__)
@@ -176,8 +177,12 @@ class BertIntentClassifier(Component):
             model_fn=model_fn, config=run_config, params={"batch_size": self.batch_size}
         )
 
+        hook = make_early_stopping_hook(self.estimator, stop_if_no_increase_hook(self.estimator,
+                                                                                 "accuracy",
+                                                                                 30))
+
         # Start training
-        self.estimator.train(input_fn=train_input_fn, max_steps=num_train_steps)
+        self.estimator.train(input_fn=train_input_fn, max_steps=num_train_steps, hooks=[hook])
 
         self.session = tf.Session()
 
