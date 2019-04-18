@@ -177,9 +177,7 @@ class BertIntentClassifier(Component):
             model_fn=model_fn, config=run_config, params={"batch_size": self.batch_size}
         )
 
-        hook = make_early_stopping_hook(self.estimator, stop_if_no_increase_hook(self.estimator,
-                                                                                 "accuracy",
-                                                                                 30))
+        hook = stop_if_no_increase_hook(self.estimator, "accuracy", 30)
 
         # Start training
         self.estimator.train(input_fn=train_input_fn, max_steps=num_train_steps, hooks=[hook])
