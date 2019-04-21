@@ -22,7 +22,7 @@ from innatis.classifiers.bert.run_classifier import (
 )
 from innatis.classifiers.bert.tokenization import FullTokenizer
 from innatis.classifiers.bert.modeling import BertConfig
-from tensorflow.contrib.estimator import make_early_stopping_hook, stop_if_no_increase_hook
+from tensorflow.contrib.estimator import stop_if_no_increase_hook
 import logging
 
 logger = logging.getLogger(__name__)
