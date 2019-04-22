@@ -232,7 +232,7 @@ def model_fn_builder(
     learning_rate,
     num_train_steps,
     num_warmup_steps,
-    bert_config,
+    bert_config=None,
 ):
     """Returns `model_fn` closure for TPUEstimator."""
 

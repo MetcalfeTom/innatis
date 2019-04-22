@@ -180,11 +180,57 @@ class BertIntentClassifier(Component):
         hook = stop_if_no_increase_hook(self.estimator, "accuracy", 30)
 
         # Start training
-        self.estimator.train(input_fn=train_input_fn, max_steps=num_train_steps, hooks=[hook])
+        self.estimator.train(
+            input_fn=train_input_fn, max_steps=num_train_steps, hooks=[hook]
+        )
 
         self.session = tf.Session()
 
         # Create predictor incase running evaluation
+        self.predict_fn = predictor.from_estimator(
+            self.estimator, serving_input_fn_builder(self.max_seq_length)
+        )
+
+    def continue_training(self, training_data, model_dir):
+        self.label_list = get_labels(training_data)
+
+        train_examples = get_train_examples(training_data.training_examples)
+        num_train_steps = int(len(train_examples) / self.batch_size * self.epochs)
+        num_warmup_steps = int(num_train_steps * 0.1)
+
+        tf.logging.info("***** Running training *****")
+        tf.logging.info("Num examples = %d", len(train_examples))
+        tf.logging.info("Batch size = %d", self.batch_size)
+        tf.logging.info("Num steps = %d", num_train_steps)
+        tf.logging.info("Num epochs = %d", self.epochs)
+        train_features = convert_examples_to_features(
+            train_examples, self.label_list, self.max_seq_length, self.tokenizer
+        )
+
+        model_fn = model_fn_builder(
+            bert_tfhub_module_handle=self.bert_tfhub_module_handle,
+            num_labels=len(self.label_list),
+            learning_rate=self.learning_rate,
+            num_train_steps=num_train_steps,
+            num_warmup_steps=num_warmup_steps,
+        )
+
+        train_input_fn = input_fn_builder(
+            features=train_features,
+            seq_length=self.max_seq_length,
+            is_training=True,
+            drop_remainder=True,
+        )
+
+        self.estimator = tf.estimator.Estimator(
+            model_fn, model_dir, params={"batch_size": 32}
+        )
+
+        self.estimator.train(input_fn=train_input_fn, max_steps=num_train_steps)
+
+        self.session = tf.Session()
+
+        # Create predictor in case running evaluation
         self.predict_fn = predictor.from_estimator(
             self.estimator, serving_input_fn_builder(self.max_seq_length)
         )
